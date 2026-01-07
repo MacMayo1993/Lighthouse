@@ -24,8 +24,8 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from src.pipeline import run_pipeline, analyze_seam_distribution
-from src.seam_types import plot_cost_profile
+from lighthouse.pipeline import run_pipeline, analyze_seam_distribution
+from lighthouse.seam_types import plot_cost_profile
 
 
 def analyze_signal(signal: np.ndarray,

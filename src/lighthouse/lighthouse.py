@@ -8,7 +8,7 @@ the true high-information boundary within a small window.
 import numpy as np
 from typing import Tuple, Optional
 from scipy.stats import entropy as scipy_entropy
-from utils import compute_delta_cost, safe_correlation
+from .utils import compute_delta_cost, safe_correlation
 
 
 def refine_seam(signal: np.ndarray,
@@ -30,9 +30,16 @@ def refine_seam(signal: np.ndarray,
             - confidence: Peak sharpness / signal-to-noise ratio
 
     Notes:
-        - ΔC(t) method: Find argmax |ΔC(t)| in window (steepest cost drop)
-        - Entropy method: Local Shannon entropy peak
-        - KL method: Max divergence between pre/post distributions
+        ΔC(t) is defined as the cost reduction from splitting at position t:
+            ΔC(t) = C([start:t]) + C([t:end]) - C([start:end])
+        where C is the segment cost (e.g., sum of squared deviations for 'l2').
+        Negative ΔC indicates a good split (cost reduction).
+
+        Methods:
+        - delta_cost: Find argmax |ΔC(t)| in window (steepest cost drop)
+        - entropy: Local Shannon entropy peak with adaptive binning
+        - kl_divergence: Max KL divergence between pre/post distributions
+
         Confidence is ratio of peak to mean, indicating "obviousness" of seam.
     """
     T = len(signal)
@@ -60,8 +67,10 @@ def refine_seam(signal: np.ndarray,
             right_window = signal[t:min(T, t + 5)]
 
             if len(left_window) > 0 and len(right_window) > 0:
-                # Discretize for entropy
-                bins = 10
+                # Adaptive binning: sqrt(n) rule (Sturges/Scott compromise)
+                max_window = max(len(left_window), len(right_window))
+                bins = max(3, int(np.sqrt(max_window)))  # At least 3 bins
+
                 hist_left, _ = np.histogram(left_window, bins=bins, density=True)
                 hist_right, _ = np.histogram(right_window, bins=bins, density=True)
 

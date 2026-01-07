@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from utils import (
+from lighthouse.utils import (
     compute_cost,
     compute_delta_cost,
     mdl_penalty,

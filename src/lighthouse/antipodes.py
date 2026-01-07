@@ -7,7 +7,7 @@ to compress structure via symmetry atoms.
 
 import numpy as np
 from typing import Dict, Tuple, Optional
-from utils import safe_correlation
+from .utils import safe_correlation
 
 
 def fit_antipode(pre_segment: np.ndarray,
@@ -28,12 +28,22 @@ def fit_antipode(pre_segment: np.ndarray,
             - corr: Best correlation coefficient
             - type: 'direct', 'reflect', 'lag'
             - param: Reflection axis (float) or lag (int)
-            - mdl_savings: Estimated compression gain
+            - mdl_savings: Estimated compression gain (bits saved)
 
     Notes:
-        Value antipodes: post ≈ -pre + 2*axis (polarity flip)
-        Time antipodes: post(t) ≈ pre(t - δ) (phase shift)
-        Combined: Try both and return best
+        Value antipodes (reflection): post ≈ -pre + 2*axis
+            where axis = (mean(pre) + mean(post)) / 2 is the reflection midpoint.
+            Detects polarity flips in ECG, phase inversions in periodic signals.
+
+        Time antipodes (lag): post(t) ≈ pre(t - δ)
+            where δ is the optimal lag maximizing correlation.
+            Detects phase shifts, cyclic patterns, delayed repetitions.
+
+        Combined mode: Evaluates both transformations and returns the best fit.
+
+        MDL savings uses Shannon limit proxy:
+            savings ≈ L * 0.5 * log2(1 + r²/(1-r²)) - involution_cost
+            where L is segment length, r is correlation coefficient.
     """
     pre = np.asarray(pre_segment)
     post = np.asarray(post_segment)

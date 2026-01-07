@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from seam_types import (
+from lighthouse.seam_types import (
     classify_seam_type,
     compute_curvature_profile,
     adaptive_threshold_classification,

@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from antipodes import (
+from lighthouse.antipodes import (
     fit_antipode,
     detect_antipodal_pairs,
     compute_symmetry_compression
