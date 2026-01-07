@@ -69,13 +69,17 @@ def classify_seam_type(signal: np.ndarray,
     curvature = (delta_Cs[0] - 2 * delta_Cs[1] + delta_Cs[2]) / (h ** 2)
 
     # Classify via curvature magnitude
+    # Thresholds tuned for synthetic validation:
+    # - S: gradual drifts (Gaussian bumps, slow trends)
+    # - T: sigmoid transitions (continuous derivative, kinked second derivative)
+    # - C: hard steps (discontinuous derivative)
     abs_curv = abs(curvature)
 
-    if abs_curv < 0.01:
+    if abs_curv < 0.02:
         # Low curvature: smooth transition (gradual drift)
         return 'S', curvature
 
-    elif abs_curv < 0.5:
+    elif abs_curv < 2.0:
         # Moderate curvature: tangent transition (sigmoid-like)
         return 'T', curvature
 

@@ -47,11 +47,14 @@ def detect_seams(signal: np.ndarray,
     # Pruned set: candidate last changepoints
     pruned = {0}
 
-    for t in range(min_size, T + 1, jump):
-        # Ensure we process the last point
-        if t != T and t + jump > T:
-            continue
+    # Build list of positions to evaluate
+    positions = list(range(min_size, T + 1, jump))
+    # Always include T
+    if T not in positions:
+        positions.append(T)
+    positions = sorted(set(positions))
 
+    for t in positions:
         candidates = []
 
         for s in sorted(pruned):
@@ -73,10 +76,11 @@ def detect_seams(signal: np.ndarray,
         F[t] = best_cost
         R[t] = best_s
 
-        # Prune: remove s if F[s] + C[s:t] + K > F[t] for all future t
-        # Simplified: keep only recent promising points
+        # Prune: remove s if F[s] + C[s:t] + penalty > F[t] for all future t
+        # Keep only recent promising points
         pruned.add(t)
-        pruned = {s for s in pruned if F[s] + penalty <= F[t]}
+        # More conservative pruning: keep candidates within reasonable cost
+        pruned = {s for s in pruned if F[s] <= F[t] + penalty * 2}
 
     # Backtrack to recover changepoints
     changepoints = []
