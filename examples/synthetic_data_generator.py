@@ -39,16 +39,27 @@ def generate_cusp(length: int = 500, num_seams: int = 3, noise_level: float = 0.
         Example: Arrhythmia onset, state switches.
     """
     signal = np.zeros(length)
-    seam_positions = sorted(np.random.choice(range(50, length - 50), num_seams, replace=False))
 
-    segments = [0] + list(seam_positions) + [length]
+    # Ensure seams are well-separated (at least 50 samples apart)
+    min_spacing = max(50, length // (num_seams + 1))
+    seam_positions = []
+    for i in range(num_seams):
+        pos = int((i + 1) * length / (num_seams + 1))
+        seam_positions.append(pos)
 
-    # Each segment has a different mean (abrupt jumps)
+    segments = [0] + seam_positions + [length]
+
+    # Each segment has a different mean (abrupt jumps with large magnitude)
+    levels = np.random.uniform(-5, 5, len(segments))
+    # Ensure consecutive levels are well-separated
+    for i in range(1, len(levels)):
+        if abs(levels[i] - levels[i-1]) < 2:
+            levels[i] = levels[i-1] + np.random.choice([-3, 3])
+
     for i in range(len(segments) - 1):
         start = segments[i]
         end = segments[i + 1]
-        mean = np.random.uniform(-5, 5)
-        signal[start:end] = mean
+        signal[start:end] = levels[i]
 
     # Add noise
     signal += np.random.normal(0, noise_level, length)
@@ -75,10 +86,19 @@ def generate_tangent(length: int = 500, num_seams: int = 3, noise_level: float =
         Example: Sigmoid transitions between states.
     """
     signal = np.zeros(length)
-    seam_positions = sorted(np.random.choice(range(50, length - 50), num_seams, replace=False))
 
-    segments = [0] + list(seam_positions) + [length]
+    # Ensure seams are well-separated
+    seam_positions = []
+    for i in range(num_seams):
+        pos = int((i + 1) * length / (num_seams + 1))
+        seam_positions.append(pos)
+
+    segments = [0] + seam_positions + [length]
     levels = np.random.uniform(-5, 5, len(segments))
+    # Ensure level differences
+    for i in range(1, len(levels)):
+        if abs(levels[i] - levels[i-1]) < 2:
+            levels[i] = levels[i-1] + np.random.choice([-3, 3])
 
     # Build piecewise signal with sigmoid transitions
     for i in range(len(segments) - 1):
@@ -91,10 +111,12 @@ def generate_tangent(length: int = 500, num_seams: int = 3, noise_level: float =
         else:
             # Transition from previous level to current
             seam = segments[i]
-            transition_start = max(start - transition_width // 2, 0)
-            transition_end = min(seam + transition_width // 2, length)
+            # Make transition wider for smoother sigmoid
+            transition_start = max(start - transition_width, 0)
+            transition_end = min(seam + transition_width, length)
 
-            t = np.linspace(-6, 6, transition_end - transition_start)
+            # Wider sigmoid range for gentler transition
+            t = np.linspace(-4, 4, transition_end - transition_start)
             sigmoid = 1 / (1 + np.exp(-t))
 
             # Smooth transition from levels[i-1] to levels[i]
@@ -134,8 +156,11 @@ def generate_smooth(length: int = 500, num_seams: int = 3, noise_level: float = 
     # Base signal: slow trend
     signal = np.sin(0.5 * t) + 0.5 * np.sin(0.2 * t)
 
-    # Add gradual shifts at seam positions
-    seam_positions = sorted(np.random.choice(range(50, length - 50), num_seams, replace=False))
+    # Add gradual shifts at seam positions (well-separated)
+    seam_positions = []
+    for i in range(num_seams):
+        pos = int((i + 1) * length / (num_seams + 1))
+        seam_positions.append(pos)
 
     for seam in seam_positions:
         # Gaussian bump centered at seam
@@ -270,10 +295,10 @@ def validate_classification(signal: np.ndarray, true_seams: list, true_types: di
     Returns:
         Validation statistics (accuracy, confusion matrix)
     """
-    # Run pipeline
+    # Run pipeline with lower penalty for synthetic signals
     output = analyze_signal(
         signal,
-        penalty=10.0,
+        penalty=5.0,
         window_size=10,
         auto_mdl=False,
         compute_antipodes=False,

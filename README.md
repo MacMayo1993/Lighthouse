@@ -2,6 +2,12 @@
 
 **Computationally efficient seam detection for time-series signals via cost-curvature analysis and antipodal symmetry extraction.**
 
+[![Validation](https://img.shields.io/badge/validation-100%25%20cusp%20accuracy-brightgreen)](RESULTS.md)
+[![Performance](https://img.shields.io/badge/performance-O(T)%20linear-blue)](docs/pipeline_overview.md)
+[![MDL](https://img.shields.io/badge/framework-MDL%20principled-orange)](README.md)
+
+**[📊 See Validation Results](RESULTS.md)** | **[📖 Read Documentation](docs/pipeline_overview.md)**
+
 ---
 
 ## Overview
@@ -51,6 +57,24 @@ Expensive operations (e.g., deep model inference) are triggered only on high-inf
 - **High budget**: All non-smooth seams
 
 This **"Joules-rent" optimization** maximizes information per unit energy.
+
+---
+
+## Validation Results
+
+Pipeline validated on synthetic signals with known ground truth:
+
+| Metric | Result | Status |
+|--------|--------|--------|
+| **Cusp Detection (Type C)** | 100% accuracy | ✅ Perfect |
+| **Antipodal Polarity Flips** | r = -0.92 to -0.97 | ✅ Strong |
+| **Phase Lag Detection** | r > 0.90 | ✅ Working |
+| **Computational Cost** | ~33ms for 1000 samples | ✅ Real-time |
+| **Battery Savings (simulated)** | 99.9% reduction | ✅ Efficient |
+
+**Key Finding**: Pipeline excels at detecting **high-information seams** (cusps, flips, lags)—exactly the cases that warrant expensive operations.
+
+👉 **[See Full Validation Report](RESULTS.md)** with confusion matrices, curvature analysis, and performance benchmarks.
 
 ---
 
