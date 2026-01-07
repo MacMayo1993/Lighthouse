@@ -102,7 +102,7 @@ pip install -e .
 
 ```python
 import numpy as np
-from src.pipeline import run_pipeline
+from lighthouse import run_pipeline
 
 # Load your signal (1D array)
 signal = np.loadtxt('data/your_signal.csv')
@@ -419,7 +419,7 @@ python examples/synthetic_data_generator.py --multi-seam --ar1-noise --phi 0.8 -
 ### Quick Smoke Test
 
 ```bash
-python -c "from src.pipeline import run_pipeline; import numpy as np; \
+python -c "import sys; sys.path.insert(0, 'src'); from lighthouse import run_pipeline; import numpy as np; \
            result = run_pipeline(np.random.randn(1000)); \
            print(f'Detected {len(result[\"seams\"])} seams')"
 ```

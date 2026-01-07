@@ -20,10 +20,10 @@ import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add parent directory's src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from src.pipeline import run_pipeline
+from lighthouse.pipeline import run_pipeline
 
 
 def load_mitbih_record(record: str, lead: int = 0, duration: int = None):
