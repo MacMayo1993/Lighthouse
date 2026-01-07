@@ -8,10 +8,10 @@ import numpy as np
 from typing import List, Dict, Optional
 import pandas as pd
 
-from .pelt import detect_seams, detect_seams_with_mdl
-from .lighthouse import refine_seam, filter_weak_seams, compute_seam_sharpness
-from .antipodes import fit_antipode, detect_antipodal_pairs, compute_symmetry_compression
-from .seam_types import classify_seam_type, compute_curvature_profile, recommend_expensive_ops
+from pelt import detect_seams, detect_seams_with_mdl
+from lighthouse import refine_seam, filter_weak_seams, compute_seam_sharpness
+from antipodes import fit_antipode, detect_antipodal_pairs, compute_symmetry_compression
+from seam_types import classify_seam_type, compute_curvature_profile, recommend_expensive_ops
 
 
 def run_pipeline(signal: np.ndarray,
@@ -227,7 +227,7 @@ def run_pipeline_streaming(signal_chunk: np.ndarray,
         - Returns only seams in new chunk (relative indices)
         - Suitable for real-time battery-constrained devices
     """
-    from .pelt import detect_seams_streaming
+    from pelt import detect_seams_streaming
 
     # Detect seams in chunk with context
     seams_chunk = detect_seams_streaming(

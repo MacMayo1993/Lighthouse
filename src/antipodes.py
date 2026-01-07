@@ -7,7 +7,7 @@ to compress structure via symmetry atoms.
 
 import numpy as np
 from typing import Dict, Tuple, Optional
-from .utils import safe_correlation
+from utils import safe_correlation
 
 
 def fit_antipode(pre_segment: np.ndarray,

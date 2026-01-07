@@ -7,7 +7,7 @@ of cost function ΔC(τ). Stays entirely within MDL framework without extra mach
 
 import numpy as np
 from typing import Tuple, Dict
-from .utils import compute_delta_cost, compute_cost
+from utils import compute_delta_cost, compute_cost
 
 
 def classify_seam_type(signal: np.ndarray,

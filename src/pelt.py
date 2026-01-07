@@ -6,7 +6,7 @@ Provides cheap, sparse scaffolding of candidate seams for downstream refinement.
 
 import numpy as np
 from typing import List, Optional
-from .utils import compute_cost, mdl_penalty
+from utils import compute_cost, mdl_penalty
 
 
 def detect_seams(signal: np.ndarray,
