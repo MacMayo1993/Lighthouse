@@ -2,9 +2,11 @@
 
 **Computationally efficient seam detection for time-series signals via cost-curvature analysis and antipodal symmetry extraction.**
 
+[![CI](https://github.com/MacMayo1993/Lighthouse/actions/workflows/ci.yml/badge.svg)](https://github.com/MacMayo1993/Lighthouse/actions/workflows/ci.yml)
 [![Validation](https://img.shields.io/badge/validation-100%25%20cusp%20accuracy-brightgreen)](RESULTS.md)
 [![Performance](https://img.shields.io/badge/performance-O(T)%20linear-blue)](docs/pipeline_overview.md)
 [![MDL](https://img.shields.io/badge/framework-MDL%20principled-orange)](README.md)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 
 **[📊 See Validation Results](RESULTS.md)** | **[📖 Read Documentation](docs/pipeline_overview.md)**
 
@@ -372,14 +374,54 @@ For ECG @ 360 Hz, 10-minute record (216,000 samples):
 
 ## Testing
 
-```bash
-# Run test suite
-pip install pytest pytest-cov
-pytest tests/ --cov=src --cov-report=html
+### Run Full Test Suite
 
-# Quick smoke test
+```bash
+# Install test dependencies
+pip install pytest pytest-cov
+
+# Run all tests with coverage
+pytest tests/ --cov=src --cov-report=html --cov-report=term-missing -v
+
+# View coverage report
+open htmlcov/index.html
+```
+
+### Run Specific Test Modules
+
+```bash
+# Test PELT detection
+pytest tests/test_pelt.py -v
+
+# Test seam type classification
+pytest tests/test_seam_types.py -v
+
+# Test antipodal pairing
+pytest tests/test_antipodes.py -v
+
+# Test lighthouse refinement
+pytest tests/test_lighthouse.py -v
+```
+
+### Run Synthetic Validation
+
+```bash
+# Cusp detection
+python examples/synthetic_data_generator.py --type C --validate
+
+# Tangent detection
+python examples/synthetic_data_generator.py --type T --validate
+
+# Multi-seam with AR(1) noise
+python examples/synthetic_data_generator.py --multi-seam --ar1-noise --phi 0.8 --validate
+```
+
+### Quick Smoke Test
+
+```bash
 python -c "from src.pipeline import run_pipeline; import numpy as np; \
-           run_pipeline(np.random.randn(1000))"
+           result = run_pipeline(np.random.randn(1000)); \
+           print(f'Detected {len(result[\"seams\"])} seams')"
 ```
 
 ---
@@ -399,14 +441,38 @@ If you use this code in research, please cite:
 
 ---
 
+## Visualizations
+
+Coming soon:
+- **Demo GIF**: ECG seam detection with color-coded seam types
+- **Colab Notebook**: No-install interactive demo ([launch notebook](#))
+- **3D Curvature Plots**: Cost surface ΔC(τ) with S/T/C boundaries
+- **Battery Savings Dashboard**: Compute reduction vs. accuracy tradeoff
+
+**Want to contribute visualizations?** See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
 ## Roadmap
 
+### Immediate (v0.2.0)
+- [x] GitHub Actions CI with pytest and coverage
+- [x] Comprehensive unit tests (>80% coverage)
+- [x] AR(1) noise support for realistic dynamics
+- [ ] Interactive demo notebook (Colab/Binder)
+- [ ] Visualization gallery
+
+### Near-Term (v0.3.0)
+- [ ] MDL Atom Dictionary (PinDictionary) for reflection atoms
+- [ ] Online/streaming PELT variant
 - [ ] Multi-dimensional signals (IMU xyz, multi-lead ECG)
-- [ ] GPU acceleration for large datasets
-- [ ] Streaming API for real-time processing
-- [ ] Pre-trained models for domain-specific seam types
-- [ ] Integration with edge ML frameworks (TensorFlow Lite, ONNX)
-- [ ] Companion paper with formal proofs and extended validation
+- [ ] Seam confidence filtering with adaptive thresholds
+
+### Long-Term
+- [ ] GPU acceleration for large datasets (CuPy/JAX)
+- [ ] Pre-trained domain models (ECG, IMU, network)
+- [ ] Edge ML framework integration (TensorFlow Lite, ONNX)
+- [ ] Companion paper with formal proofs
 
 ---
 

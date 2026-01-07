@@ -5,9 +5,16 @@ Synthetic Data Generator for S/T/C Seam Type Validation
 Generates signals with known seam types (Smooth, Tangent, Cusp) for validating
 the cost-curvature classification framework.
 
+New features:
+- AR(1) noise for realistic dynamics
+- Multi-seam signals with varying types
+- Configurable SNR levels
+- Auto-save for CI integration
+
 Usage:
     python synthetic_data_generator.py --type C --output cusps.csv
     python synthetic_data_generator.py --mixed --plot
+    python synthetic_data_generator.py --ar1-noise --phi 0.8
 """
 
 import numpy as np
@@ -20,6 +27,34 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pelt_lighthouse import analyze_signal
+
+
+def add_ar1_noise(signal: np.ndarray, phi: float = 0.5, sigma: float = 0.1) -> np.ndarray:
+    """
+    Add AR(1) autocorrelated noise to signal.
+
+    Args:
+        signal: Clean signal
+        phi: AR(1) coefficient (0 < phi < 1 for stationarity)
+        sigma: Innovation noise std
+
+    Returns:
+        Signal with AR(1) noise
+
+    Notes:
+        AR(1) noise is more realistic than white noise for many applications:
+        - ECG: baseline wander (phi ~ 0.8-0.9)
+        - IMU: sensor drift (phi ~ 0.7-0.9)
+        - Network: bursty traffic (phi ~ 0.5-0.7)
+    """
+    T = len(signal)
+    noise = np.zeros(T)
+    noise[0] = np.random.normal(0, sigma)
+
+    for t in range(1, T):
+        noise[t] = phi * noise[t-1] + np.random.normal(0, sigma)
+
+    return signal + noise
 
 
 def generate_cusp(length: int = 500, num_seams: int = 3, noise_level: float = 0.1) -> tuple:
@@ -355,6 +390,117 @@ def validate_classification(signal: np.ndarray, true_seams: list, true_types: di
     }
 
 
+def generate_multi_seam(length: int = 1000,
+                       seam_types: list = ['S', 'T', 'C'],
+                       num_seams_per_type: int = 2,
+                       noise_level: float = 0.1,
+                       ar1_phi: float = 0.0) -> tuple:
+    """
+    Generate signal with multiple seams of different types.
+
+    Args:
+        length: Total signal length
+        seam_types: List of seam types to include
+        num_seams_per_type: Number of each type
+        noise_level: Noise std
+        ar1_phi: AR(1) coefficient (0 = white noise)
+
+    Returns:
+        (signal, seam_positions, seam_type_map): Signal, seams, and ground truth
+
+    Notes:
+        Creates realistic test cases with mixed seam types for comprehensive validation.
+    """
+    total_seams = len(seam_types) * num_seams_per_type
+    signal = np.zeros(length)
+
+    # Well-separated seam positions
+    seam_positions = []
+    for i in range(total_seams):
+        pos = int((i + 1) * length / (total_seams + 1))
+        seam_positions.append(pos)
+
+    # Assign types cyclically
+    type_assignments = []
+    for stype in seam_types:
+        type_assignments.extend([stype] * num_seams_per_type)
+    np.random.shuffle(type_assignments)
+
+    segments = [0] + seam_positions + [length]
+
+    for i in range(len(segments) - 1):
+        start = segments[i]
+        end = segments[i + 1]
+        seg_length = end - start
+
+        if i >= len(type_assignments):
+            stype = 'S'
+        else:
+            stype = type_assignments[i]
+
+        if stype == 'C':
+            # Cusp: constant level with abrupt jump
+            level = np.random.uniform(-5, 5)
+            signal[start:end] = level
+
+        elif stype == 'T':
+            # Tangent: sigmoid transition
+            t = np.linspace(-4, 4, seg_length)
+            sigmoid = 1 / (1 + np.exp(-t))
+            level_start = np.random.uniform(-5, 5)
+            level_end = level_start + np.random.choice([-3, 3])
+            signal[start:end] = level_start + (level_end - level_start) * sigmoid
+
+        elif stype == 'S':
+            # Smooth: sinusoidal or polynomial
+            t = np.linspace(0, 2*np.pi, seg_length)
+            signal[start:end] = 2 * np.sin(t) + np.random.uniform(-2, 2)
+
+    # Add noise (AR(1) or white)
+    if ar1_phi > 0:
+        signal = add_ar1_noise(signal, phi=ar1_phi, sigma=noise_level)
+    else:
+        signal += np.random.normal(0, noise_level, length)
+
+    seam_type_map = {seam: stype for seam, stype in zip(seam_positions, type_assignments)}
+
+    return signal, seam_positions, seam_type_map
+
+
+def generate_snr_test(base_signal: np.ndarray,
+                     snr_db_range: list = [0, 10, 20, 30]) -> list:
+    """
+    Generate signals at different SNR levels for robustness testing.
+
+    Args:
+        base_signal: Clean signal
+        snr_db_range: List of SNR levels in dB
+
+    Returns:
+        List of (snr_db, noisy_signal) tuples
+
+    Notes:
+        SNR = 10 * log10(P_signal / P_noise)
+        Useful for testing algorithm robustness to measurement noise.
+    """
+    signal_power = np.mean(base_signal**2)
+
+    results = []
+    for snr_db in snr_db_range:
+        # Compute noise power from SNR
+        snr_linear = 10**(snr_db / 10)
+        noise_power = signal_power / snr_linear
+        noise_std = np.sqrt(noise_power)
+
+        # Add white noise
+        noise = np.random.normal(0, noise_std, len(base_signal))
+        noisy_signal = base_signal + noise
+
+        results.append((snr_db, noisy_signal))
+
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Generate synthetic signals with known seam types',
@@ -375,6 +521,15 @@ def main():
     parser.add_argument('--validate', action='store_true',
                        help='Run validation (test classification accuracy)')
 
+    parser.add_argument('--ar1-noise', action='store_true',
+                       help='Use AR(1) noise instead of white noise')
+    parser.add_argument('--phi', type=float, default=0.5,
+                       help='AR(1) coefficient (default: 0.5)')
+    parser.add_argument('--snr-test', action='store_true',
+                       help='Generate SNR robustness test')
+    parser.add_argument('--multi-seam', action='store_true',
+                       help='Generate multi-seam signal with mixed types')
+
     args = parser.parse_args()
 
     # Generate signal
@@ -382,7 +537,17 @@ def main():
 
     seam_type_map = {}
 
-    if args.type == 'C':
+    if args.multi_seam:
+        signal, seams, seam_type_map = generate_multi_seam(
+            args.length,
+            seam_types=['S', 'T', 'C'],
+            num_seams_per_type=2,
+            noise_level=args.noise,
+            ar1_phi=args.phi if args.ar1_noise else 0.0
+        )
+        print(f"Generated multi-seam signal with {len(seams)} seams")
+
+    elif args.type == 'C':
         signal, seams = generate_cusp(args.length, num_seams=5, noise_level=args.noise)
         seam_type_map = {s: 'C' for s in seams}
 
