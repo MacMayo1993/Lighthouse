@@ -8,7 +8,7 @@ the true high-information boundary within a small window.
 import numpy as np
 from typing import Tuple, Optional
 from scipy.stats import entropy as scipy_entropy
-from .utils import compute_delta_cost, safe_correlation
+from utils import compute_delta_cost, safe_correlation
 
 
 def refine_seam(signal: np.ndarray,
